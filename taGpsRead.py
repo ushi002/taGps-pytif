@@ -163,11 +163,12 @@ class Priklad():
         rx = self.dev.read(10)
         print 'Chars loaded: ',
         print len(rx)
-        for char in rx:
-            print "{:02x}".format(ord(char)),
-        print ''
-        self.pages = struct.unpack('>H', rx[0:2])[0]
-        print 'Pocet stranek: {:d}'.format(self.pages)
+        if len(rx) > 2:
+            for char in rx:
+                print "{:02x}".format(ord(char)),
+            print ''
+            self.pages = struct.unpack('>H', rx[0:2])[0]
+            print 'Pocet stranek: {:d}'.format(self.pages)
 
     def clrMemClicked(self):
         self.dev.write('r')
@@ -253,7 +254,7 @@ class Priklad():
         lines.append('<?xml version="1.0" encoding="UTF-8" standalone="no"?>')
         lines.append('<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" creator="Sports Tracker" version="1.1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd">')
         lines.append('  <metadata>')
-        lines.append('    <name>05/05/2015 09:05</name>')
+        lines.append('    <name>07/07/2016 09:05</name>')
         lines.append('    <author>')
         lines.append('      <name>Ludek Uhlir</name>')
         lines.append('    </author>')
@@ -265,7 +266,7 @@ class Priklad():
         lines.append('    <trkseg>')
 
         for ubx in app.ubxlist:
-            if ubx.fixType == 0x3:
+            if ubx.fixType == 0x3 or ubx.fixType == 0x2: #3D or 2D fix
                 lines.append('      <trkpt lat="' + str(ubx.lat) + '"' + ' lon="' + str(ubx.lon) + '"' + '>')
                 lines.append('        <ele>' + "{:.1f}".format(ubx.height/1000.0) + '</ele>')
                 tmstr = "{:d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(ubx.year, ubx.month, ubx.day, ubx.hour, ubx.min, ubx.sec)
