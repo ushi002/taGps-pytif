@@ -76,6 +76,62 @@ class UbxMessage():
         self.lat_min = int((self.lat - self.lat_deg) * 60)
         self.lat_sec = (self.lat - self.lat_deg - self.lat_min/60.0) * 3600
 
+class UbxMessageShort():
+    # U16 year;
+    # U8  month;
+    # U8  day;
+    # U8  hour;
+    # U8  min;
+    # U8  sec;
+    # U8  valid;
+    # /* Brief Fixtype: - 0x00 = No Fix
+    #  * 		- 0x01 = Dead Reckoning only
+    #  * 		- 0x02 = 2D-Fix
+    #  * 		- 0x03 = 3D-Fix
+    #  * 		- 0x04 = GNSS + dead reckoning combined
+    #  * 		- 0x05 = Time only fix  */
+    # U8  fixType;
+    # U8  flags;
+    # U8  numSV;
+    # I32 lon;
+    # I32 lat;
+    # I32 height;
+    # I32 gSpeed;
+    # U32 reseverd3;
+    def __init__(self, bytes):
+        ofs = 0  # for debuggging
+        self.year = struct.unpack('H', bytes[ofs:ofs+2])[0]
+        self.month = struct.unpack('B', bytes[ofs+2:ofs+3])[0]
+        self.day = struct.unpack('B', bytes[ofs+3:ofs+4])[0]
+        self.hour = struct.unpack('B', bytes[ofs+4:ofs+5])[0]
+
+        self.min = struct.unpack('B', bytes[ofs+5:ofs+6])[0]
+        self.sec = struct.unpack('B', bytes[ofs+6:ofs+7])[0]
+        self.valid = struct.unpack('B', bytes[ofs+7:ofs+8])[0]
+
+        self.fixType = struct.unpack('B', bytes[ofs+8:ofs+9])[0]
+        self.flags = struct.unpack('B', bytes[ofs+9:ofs+10])[0]
+        self.numSV = struct.unpack('B', bytes[ofs+10:ofs+11])[0]
+
+        self.lon = struct.unpack('I', bytes[ofs+11:ofs+15])[0]/10000000.0
+        self.lat = struct.unpack('I', bytes[ofs+15:ofs+19])[0]/10000000.0
+
+        self.height = struct.unpack('I', bytes[ofs+19:ofs+23])[0]
+        self.speed = struct.unpack('I', bytes[ofs+23:ofs+27])[0]
+        self.battery1 = struct.unpack('H', bytes[ofs+27:ofs+29])[0]
+        self.battery2 = struct.unpack('H', bytes[ofs+29:ofs+31])[0]
+
+
+        self.lon_deg = int(self.lon)
+        self.lon_min = int((self.lon - self.lon_deg) * 60)
+        self.lon_sec = (self.lon - self.lon_deg - self.lon_min/60.0) * 3600
+
+
+
+        self.lat_deg = int(self.lat)
+        self.lat_min = int((self.lat - self.lat_deg) * 60)
+        self.lat_sec = (self.lat - self.lat_deg - self.lat_min/60.0) * 3600
+
 
 
 
@@ -132,17 +188,19 @@ class Priklad():
             rx = self.dev.read(bytes_to_read)
             print 'Chars loaded: ',
             print len(rx),
-            print 'page {:d} from {:d}'.format(actual_page, self.pages)
+            print '... reading page {:d} from {:d}'.format(actual_page, self.pages)
             print 'numbers: ',
             for char in rx:
                 print "{:02x}".format(ord(char)),
             print ''
+            ubxsperpage = 8
+            startOffset=addressbytes+dummybytes
+            bytesPerUbxMessage=33
+
             if len(rx) == bytes_to_read:
-                # two UBX messages per flash page:
-
-                self.ubxlist.append(UbxMessage(rx[addressbytes+dummybytes:addressbytes+dummybytes+pglength/2]))
-                self.ubxlist.append(UbxMessage(rx[addressbytes+dummybytes+pglength/2:]))
-
+                rx = rx[startOffset:]
+                for ubxnum in range(0, ubxsperpage):
+                    self.ubxlist.append(UbxMessageShort(rx[ubxnum*bytesPerUbxMessage:(ubxnum+1)*bytesPerUbxMessage]))
                 #store bytes to a file
                 wFile.write(rx)
             if len(rx) == 0:
@@ -249,7 +307,11 @@ if __name__ == '__main__':
         #     print str(ubx.lon_deg) + '°',
         #     print str(ubx.lon_min) + '\'',
         #     print str(ubx.lon_sec) + '\"',
-            print ' fix type: 0x{:02x}'.format(ubx.fixType)
+            print ' fix type: 0x{:02x}'.format(ubx.fixType),
+            print 'flags: 0x{:02x}'.format(ubx.flags),
+            print 'numSV: 0x{:02x}'.format(ubx.numSV),
+            print 'battery1: 0x{:04x}'.format(ubx.battery1),
+            print 'battery2: 0x{:04x}'.format(ubx.battery2)
         app.ubxlistToGpx()
 
 
