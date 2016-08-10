@@ -219,7 +219,9 @@ class Priklad():
         pglength = 264
         addressbytes = 4  # flash read address bytes
         dummybytes = 4  # flash read dummy bytes
-        bytes_to_read = addressbytes+dummybytes+pglength
+        #we are not storing the "offset bytes" in the file....
+        startOffset=addressbytes+dummybytes
+        bytes_to_read = addressbytes+dummybytes+pglength-startOffset
         while True:
             actual_page += 1
             rx = rFile.read(bytes_to_read)
@@ -230,16 +232,16 @@ class Priklad():
             for char in rx:
                 print "{:02x}".format(ord(char)),
             print ''
+
+            ubxsperpage = 8
+            bytesPerUbxMessage=33
+
             if len(rx) == bytes_to_read:
-                # two UBX messages per flash page:
-
-                self.ubxlist.append(UbxMessage(rx[addressbytes+dummybytes:addressbytes+dummybytes+pglength/2]))
-                self.ubxlist.append(UbxMessage(rx[addressbytes+dummybytes+pglength/2:]))
-
+                #rx = rx[startOffset:]
+                for ubxnum in range(0, ubxsperpage):
+                    self.ubxlist.append(UbxMessageShort(rx[ubxnum*bytesPerUbxMessage:(ubxnum+1)*bytesPerUbxMessage]))
             if len(rx) == 0:
                 break
-            # flush stuffing???
-            # rx = self.dev.read(8)
 
         rFile.close()
 
