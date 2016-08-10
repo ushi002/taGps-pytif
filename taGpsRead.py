@@ -251,35 +251,58 @@ class Priklad():
             self.dev.close()
 
     def ubxlistToGpx(self):
-        fw = open('trasa.gpx', "w")
-        lines = []
-        lines.append('<?xml version="1.0" encoding="UTF-8" standalone="no"?>')
-        lines.append('<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" creator="Sports Tracker" version="1.1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd">')
-        lines.append('  <metadata>')
-        lines.append('    <name>07/07/2016 09:05</name>')
-        lines.append('    <author>')
-        lines.append('      <name>Ludek Uhlir</name>')
-        lines.append('    </author>')
-        lines.append('    <link href="www.sports-tracker.com">')
-        lines.append('      <text>Sports Tracker</text>')
-        lines.append('    </link>')
-        lines.append('  </metadata>')
-        lines.append('  <trk>')
-        lines.append('    <trkseg>')
 
+        headerLines = []
+        headerLines.append('<?xml version="1.0" encoding="UTF-8" standalone="no"?>')
+        headerLines.append('<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" creator="Sports Tracker" version="1.1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd">')
+        headerLines.append('  <metadata>')
+        headerLines.append('    <name>07/07/2016 09:05</name>')
+        headerLines.append('    <author>')
+        headerLines.append('      <name>Ludek Uhlir</name>')
+        headerLines.append('    </author>')
+        headerLines.append('    <link href="www.sports-tracker.com">')
+        headerLines.append('      <text>Sports Tracker</text>')
+        headerLines.append('    </link>')
+        headerLines.append('  </metadata>')
+        headerLines.append('  <trk>')
+        headerLines.append('    <trkseg>')
+
+        footerLines =[]
+        footerLines.append('    </trkseg>')
+        footerLines.append('  </trk>')
+        footerLines.append('</gpx>')
+
+        sessionStarted = False
         for ubx in app.ubxlist:
+            if ubx.year == 0xaaaa: #detected start session:
+                if (sessionStarted):
+                    #close previous file:
+                    lines.extend(footerLines)
+                    fw.write('\n'.join(lines) + '\n')
+                    fw.close()
+                    sessionStarted = False
+                continue
+            if (not sessionStarted):
+                lines = []
+                lines.extend(headerLines)
+                fname = 'trasa_{:4d}-{:02d}-{:02d}-{:02d}-{:02d}-{:02d}.txt'.format(
+                ubx.year, ubx.month, ubx.day, ubx.hour, ubx.min, ubx.sec)
+                print("Create new file {:s}".format(fname))
+                fw = open(fname, "w")
+                sessionStarted = True
             if ubx.fixType == 0x3 or ubx.fixType == 0x2: #3D or 2D fix
+            #if ubx.flags > 0: #GPS fixed
                 lines.append('      <trkpt lat="' + str(ubx.lat) + '"' + ' lon="' + str(ubx.lon) + '"' + '>')
                 lines.append('        <ele>' + "{:.1f}".format(ubx.height/1000.0) + '</ele>')
                 tmstr = "{:d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(ubx.year, ubx.month, ubx.day, ubx.hour, ubx.min, ubx.sec)
                 lines.append('        <time>' + tmstr + '</time>')
                 lines.append('      </trkpt>')
+        if (sessionStarted):
+                #close previous file:
+                lines.extend(footerLines)
+                fw.write('\n'.join(lines) + '\n')
+                fw.close()
 
-        lines.append('    </trkseg>')
-        lines.append('  </trk>')
-        lines.append('</gpx>')
-        fw.write('\n'.join(lines) + '\n')
-        fw.close()
 
 if __name__ == '__main__':
 
