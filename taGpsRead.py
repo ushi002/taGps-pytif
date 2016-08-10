@@ -294,13 +294,10 @@ if __name__ == '__main__':
         print 'Number of ubx messages: {:d}'.format(len(app.ubxlist))
         print 'Rok, mesic, den, hodin, min, sec, valid, lon, lat'
         for ubx in app.ubxlist:
-            print 'UBX message: ',
-            print ubx.year,
-            print ubx.month,
-            print ubx.day,
-            print ubx.hour,
-            print ubx.min,
-            print ubx.sec,
+            print 'UBX message: {:4d} {:2d} {:2d} {:2d} {:2d} {:2d}'.format(
+                ubx.year, ubx.month, ubx.day, ubx.hour, ubx.min, ubx.sec,
+            ),
+
         #     print ubx.valid,
         #     print ubx.lat,
         #     print ubx.lon,
